@@ -1,36 +1,16 @@
-// <<<<<<<< FICHA 4 >>>>>>>>>
-
-function fillBirthYearSelect(){
-    var currentYear = new Date().getFullYear();
-    var birthYearSelect = document.getElementById("BirthYear");
-    let year; // "let" é uma variável privada
-    for(year = 1900; year<=currentYear;year++){
-        //console.log(year);
-        var option = document.createElement("option");
-        option.value = year;
-        option.text = year;
-        birthYearSelect.appendChild(option);
-    }
-    console.log(currentYear);//verificar se funciona
-}
-
+// src: ficha 4
 
 
 //Exercício 3 - validação dos formulários
 
 // Uma "flag" é um valor que pode ser verdadeiro ou falso
 function validateForm(){
-    alert("Estou na Validação");
     let isValid = true;
     var nameInput = document.getElementById("nome");
     var emailInput = document.getElementById("email");
     var mensagemInput = document.getElementById("mensagem");
-    var BirthYearInput = document.getElementById("BirthYear");
-    var gendermaleInput = document.getElementById("gendermale");
-    var genderfemaleInput = document.getElementById("genderfemale");
-    var genderotherInput = document.getElementById("genderother");
     var termosInput = document.getElementById("termos");
-
+    var captchaInput = document.getElementById("captchaInput");
     // Validar nome
     if(nameInput.value.length < 3){
         showError("nome", "Erro no nome!");
@@ -45,26 +25,26 @@ function validateForm(){
     } else {
         hideError("email");
     }
-
     if(mensagemInput.value.trim() === ""){
         isValid = false;
         showError("mensagem", "Erro no mensagem!");  
     } else {
         hideError("mensagem");
     }
-
-    if(!genderfemaleInput.checked && !gendermaleInput.checked && !genderotherInput.checked){
-        isValid = false;
-        showError("gender", "Erro no gender!");   
-    } else {
-        hideError("gender");
-    }
-
     if(!termosInput.checked){
         isValid = false;
         showError("termos", "Erro no termos!"); 
     } else {
         hideError("termos");
+    }
+    if (captchaInput.value === captchaText) {
+        document.getElementById("message").innerText = "CAPTCHA Verified Successfully!";
+        document.getElementById("message").style.color = "green";
+    } else {
+        document.getElementById("message").innerText = "Incorrect CAPTCHA. Try again.";
+        document.getElementById("message").style.color = "red";
+        generateCaptcha(); // Generate a new CAPTCHA
+        isValid = false;
     }
     return isValid;
 }
@@ -74,7 +54,6 @@ function validateEmail(email){
 }
 
 function saveFormData(){
-    alert("Gravar dados");
     //var formData = [];
     //var formData = array();
     //objeto que contém os dados do form já validados
@@ -82,13 +61,20 @@ function saveFormData(){
         nome: document.getElementById("nome").value,
         email: document.getElementById("email").value,
         mensagem: document.getElementById("mensagem").value,
-        BirthYear: document.getElementById("BirthYear").value,
-        gender: document.querySelector("input[name='gender']:checked"),
         termos: document.getElementById("termos").checked,
     };
+    if(localStorage.formID){
+        formID= parseInt(localStorage.getItem("formID"));
+        formID += 1;
+        localStorage.setItem("formID", formID);
+    } else {
+        formID = 1;
+        localStorage.setItem("formID", formID);
+    }
+
     console.log(formData);
     console.log(formData.email);
-    localStorage.setItem("formulario", JSON.stringify(formData)); // Põe na caixa do chrome esta função
+    localStorage.setItem("formulario"+formID.toString(), JSON.stringify(formData)); // Guarda o id do formulário
 }
 
 
@@ -103,17 +89,96 @@ function hideError(fieldId) {
     errorDiv.style.display = "none";
 }
 
-function showHeader() {
-    
+// Generate random CAPTCHA string
+function generateCaptcha() {
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let captcha = "";
+    for (let i = 0; i < 6; i++) {
+        captcha += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    document.getElementById("captcha").innerText = captcha;
 }
 
+// CAPTCHA src: chat GPT
 
-document.addEventListener('DOMContentLoaded', function(){
-    //quando a página é carregada é chamada
-    fillBirthYearSelect();
-    var teste = validateEmail("teste@sapo.pt");
-    console.log(teste);    
+let captchaText = ""; // To store the generated CAPTCHA text
+
+// Generate random CAPTCHA text
+function generateCaptchaText() {
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let captcha = "";
+    for (let i = 0; i < 6; i++) {
+        captcha += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return captcha;
+}
+
+// Render CAPTCHA with noise and distortion
+function generateCaptcha() {
+    const canvas = document.getElementById("captchaCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Generate random CAPTCHA text
+    captchaText = generateCaptchaText();
+
+    // Add background noise
+    ctx.fillStyle = "#f0f0f0";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < 50; i++) {
+        ctx.beginPath();
+        ctx.arc(
+            Math.random() * canvas.width,
+            Math.random() * canvas.height,
+            Math.random() * 5,
+            0,
+            2 * Math.PI
+        );
+        ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.5)`;
+        ctx.fill();
+    }
+
+    // Draw CAPTCHA text with distortion
+    ctx.font = "30px Arial";
+    ctx.fillStyle = "#000";
+    ctx.setTransform(1, 0.2 - Math.random() * 0.4, 0.2 - Math.random() * 0.4, 1, Math.random() * 10, Math.random() * 10);
+    ctx.fillText(captchaText, 40, 50);
+
+    // Reset transformation matrix
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Add lines over the text
+    for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.strokeStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.7)`;
+        ctx.lineWidth = 1 + Math.random() * 2;
+        ctx.stroke();
+    }
+}
+
+// Mostrar o modal dos termos
+function showTerms() {
+    document.getElementById("messageTerms").style.display = "flex";
+}
+
+// Fechar o modal
+function closeTerms() {
+    document.getElementById("messageTerms").style.display = "none";
+}
+
+// Initial CAPTCHA generation
+// sem JQUERY: document.addEventListener('DOMContentLoaded', function(){});
+$(document).ready(function() {
+    generateCaptcha();
+    var success = document.getElementById("success-message");
+    success.style.opacity = "0";
+            
 });
+
 document.getElementById("contact-form").addEventListener("submit", function(event){
     //Previne o comportamento default de submissão do form (senão faz refresh)
     event.preventDefault();
@@ -125,11 +190,16 @@ document.getElementById("contact-form").addEventListener("submit", function(even
 
         saveFormData();
         var success = document.getElementById("success-message");
+        var sButton =  document.getElementById("submitForm");
+        sButton.style.visibility = 'hidden';
         success.style.opacity = "1";
         setTimeout(() => {
             success.style.opacity = "0";
-        }, 5000);
-    } /*else {
-        alert("Tem erros")
-    }*/
+        }, 2000);
+        setTimeout(() => {
+            // Refresh the page
+            location.reload();
+        }, 2000);
+        
+    }
 });

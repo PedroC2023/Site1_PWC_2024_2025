@@ -1,13 +1,22 @@
-// FICHA API
-
+// Variáveis globais
 var countriesData;
+var countryData;
+var favoritesID = Array();
+var favoritesName = Array();
 
+//Função de busca do botão Procurar
 $(document).ready(function() {
     $("#searchButton").on("click", function() {
         // buscar o valor escrito no input
         var inputText = $("#searchInput").val();
         // vai buscar os filmes do servidor
         fetchCountries(inputText);
+    });
+});
+//Função de busca do botão favorites
+$(document).ready(function() {
+    $("#favoritesButton").on("click", function() {
+        displayCountries(countriesData, 3);
     });
 });
 
@@ -22,11 +31,11 @@ function fetchCountries(inputText) {
             // dados vindos do servidor
             //console.log(data);
             //passar o array de filmes devolvidos pelo servidor se olhar mos para o objeto é o "search" 
-            countriesData = data;
-            displayCountries(data);
+            countryData = data;
+            displayCountries(data, 2); // modo 2 do display
         },
         error: function() {
-            alert("A procurar.");
+            alert("Não encontrado.");
         }
     });
 }
@@ -43,47 +52,46 @@ function fetchAllCountries(inputText) {
             //console.log(data);
             //passar o array de filmes devolvidos pelo servidor se olhar mos para o objeto é o "search" 
             countriesData = data;
-            displayCountries(data);
+            displayCountries(data, 1); // modo 1 do display: mostra a checkbox para adicionar favoritos
         },
         error: function() {
-            alert("A procurar.");
+            alert("Erro: Vazio.");
         }
     });
 } 
-/*  DISPLAYCOUNTRIES 1
 
-function displayCountries(arrayPaises) {
-    //var listaFilmes = $("#movieList"); // mesmo que ter document get element by id
-    var listaPaises = document.getElementById("countrylist"); // mesmo que ter document get element by id
-    listaPaises.innerHTML = "";
-    var result = [];
-    for(var i in arrayPaises)
-        result.push([i, arrayPaises[i]]);
-    var paises = result[0];
-    console.log(arrayPaises);
-    var n = 0;
-    for(const pais of arrayPaises) {       
-        n++;
-        var countryCard = `
-            <div class='row countrylist' id="country${n}">     
-                <div class="col-auto">                   
-                    <img class="countryimage" height="120px" src="${pais.flags.png}" alt="${pais.name.common}">
-                </div>
-                <div class="col-md-4">                                              
-                    <h5 class="card-title">${pais.name.common}</h5>
-                    <p class="card-text">${pais.currencies.EUR}</p>
-                    <a href="#" class="btn btn-primary">${pais.capital}</a>                    
-                </div>                
-            </div>
-            `;
-        listaPaises.innerHTML += countryCard.toString();
-       
+function toggleFavorite(id){
+    if(favoritesID.indexOf(id) == -1){
+        favoritesID.push(id);
+        favoritesName.push(countriesData[id].translations.por.common);
+        //alert(JSON.stringify(favoritesName));
+
+        // Store
+        localStorage.setItem("favoritesID", JSON.stringify(favoritesID));
+        localStorage.setItem("favoritesName", JSON.stringify(favoritesName));
+    }else{
+        favoritesID.splice(favoritesID.indexOf(id), 1);
+        favoritesName.splice(favoritesID.indexOf(id), 1);
+
+        localStorage.setItem("favoritesID", JSON.stringify(favoritesID));
+        localStorage.setItem("favoritesName", JSON.stringify(favoritesName));
     }
     
-}*/
+}
+
+function cleanFavorites(){
+    localStorage.clear();
+}
+
+function loadFavorites(){
+    if(localStorage.favoritesID){
+        favoritesID = JSON.parse(localStorage.getItem("favoritesID"));
+        favoritesName = JSON.parse(localStorage.getItem("favoritesName"));
+    }
+}
 
 // Função para buscar países de um API e selecionar alguns para destaque
-function displayCountries(countries) {
+function displayCountries(countries, mode) {
     try {
         /* 
         const response = await fetch('https://restcountries.com/v3.1/region/europe');
@@ -126,21 +134,36 @@ function displayCountries(countries) {
                 buttonElement.textContent = 'Mais Informações';
                 const n = id; //para a função ler o id com o numero atual
                 buttonElement.onclick = function(){displayCountryInfo(n);};
+                if(mode != 2){  
+                    const wrapper = document.createElement('div');
 
-                const chkboxElementFav = document.createElement('input');
-                //chkboxElementFav.href = `<script>${country.maps.googleMaps}</script>`; 
-                chkboxElementFav.type = "checkbox";
-                chkboxElementFav.className = 'star glyphicon glyphicon-star-empty';
-                chkboxElementFav.onclick = function(){displayCountryInfo(n);};
+                    const labelfav = document.createElement("label");
+                    labelfav.textContent = "Favorito ";
 
+                    const chkboxElementFav = document.createElement('input'); 
+                    chkboxElementFav.type = "checkbox";
+                    chkboxElementFav.id = `fav-${n}`;
+                    chkboxElementFav.className = 'add-fav';
+                    chkboxElementFav.onclick = function(){toggleFavorite(n);};
+                    if(favoritesID.indexOf(n) !== -1){
+                        chkboxElementFav.checked = true;
+                    }
+                    
+                    labelfav.appendChild(chkboxElementFav);
+                    wrapper.appendChild(labelfav);                    
+                    cardBody.appendChild(wrapper);                    
+                }
+                
+                if(mode != 3 || favoritesID.indexOf(n) !== -1){
+                    cardBody.appendChild(flagImage);
+                    cardBody.appendChild(nameElement);
+                    cardBody.appendChild(buttonElement);
+                    cardElement.appendChild(cardBody);
+                    colElement.appendChild(cardElement);
+                    container.appendChild(colElement); 
+                }
 
-                cardBody.appendChild(flagImage);
-                cardBody.appendChild(nameElement);
-                cardBody.appendChild(buttonElement);
-                cardBody.appendChild(chkboxElementFav);
-                cardElement.appendChild(cardBody);
-                colElement.appendChild(cardElement);
-                container.appendChild(colElement);   
+                  
             }   
             id++;        
         });
@@ -272,6 +295,10 @@ function displayCountryInfo(idnum) {
     }
 }
 
+loadFavorites(favoritesID, favoritesName);
+fetchAllCountries("region/europe");
+
+
 /*
 function displayCountryInfo(idnum) {
     try {
@@ -350,11 +377,35 @@ function displayCountryInfo(idnum) {
     }
 }*/
 
-fetchAllCountries("region/europe");
 
-/*
-Limitar busca aos países europeus
-Por os links a abrir uma página com informção do país
+/*  DISPLAYCOUNTRIES 1
 
-
-*/
+function displayCountries(arrayPaises) {
+    //var listaFilmes = $("#movieList"); // mesmo que ter document get element by id
+    var listaPaises = document.getElementById("countrylist"); // mesmo que ter document get element by id
+    listaPaises.innerHTML = "";
+    var result = [];
+    for(var i in arrayPaises)
+        result.push([i, arrayPaises[i]]);
+    var paises = result[0];
+    console.log(arrayPaises);
+    var n = 0;
+    for(const pais of arrayPaises) {       
+        n++;
+        var countryCard = `
+            <div class='row countrylist' id="country${n}">     
+                <div class="col-auto">                   
+                    <img class="countryimage" height="120px" src="${pais.flags.png}" alt="${pais.name.common}">
+                </div>
+                <div class="col-md-4">                                              
+                    <h5 class="card-title">${pais.name.common}</h5>
+                    <p class="card-text">${pais.currencies.EUR}</p>
+                    <a href="#" class="btn btn-primary">${pais.capital}</a>                    
+                </div>                
+            </div>
+            `;
+        listaPaises.innerHTML += countryCard.toString();
+       
+    }
+    
+}*/
